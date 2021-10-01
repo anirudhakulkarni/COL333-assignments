@@ -18,6 +18,12 @@ import random, util
 
 from game import Agent
 
+# parameters for betterEvaluationFunction
+p_param=10
+q_param=1000
+r_param=1e10
+s_param=1e10
+
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -43,10 +49,10 @@ class ReflexAgent(Agent):
 
         # Choose one of the best actions
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        print(scores)
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
-
         "Add more of your code here if you want to"
 
         return legalMoves[chosenIndex]
@@ -73,11 +79,38 @@ class ReflexAgent(Agent):
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-        print(newPos)
-        print(newFood)
-        print(newGhostStates)
-        print(newScaredTimes)
         "*** YOUR CODE HERE ***"
+        # strategy 1:
+        # if the ghost is scared, then we want to go to the ghost
+        # if the ghost is not scared, then we want to go to the closest food
+        # if the ghost is not scared, then we want to go to the closest ghost
+        
+        # distance from all food
+        food_distance = 0 
+        for food in newFood.asList():
+            if manhattanDistance(newPos, food) > 0:
+                food_distance += p_param/manhattanDistance(newPos, food)
+            else:
+                food_distance += r_param
+        # distance from all ghost
+        ghost_distance = 0
+        for ghost in newGhostStates:
+            if ghost.scaredTimer > 0:
+                if manhattanDistance(newPos, ghost.getPosition()) > 0:
+                    ghost_distance += q_param/manhattanDistance(newPos, ghost.getPosition())
+                else:
+                    ghost_distance += s_param
+            else:
+                if manhattanDistance(newPos, ghost.getPosition()) > 0:
+                    ghost_distance -= q_param/manhattanDistance(newPos, ghost.getPosition())
+                else:
+                    ghost_distance -= s_param
+        print(food_distance, ghost_distance)
+        return food_distance+ghost_distance
+        print(successorGameState.getScore())
+
+        # end strategy 1
+
         return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
