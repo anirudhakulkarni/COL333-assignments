@@ -19,8 +19,7 @@ import random, util
 from game import Agent
 
 # parameters for betterEvaluationFunction
-p_param=10
-q_param=1000
+q_param=100
 r_param=1e10
 s_param=1e10
 
@@ -48,7 +47,7 @@ class ReflexAgent(Agent):
         legalMoves = gameState.getLegalActions()
 
         # Choose one of the best actions
-        scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        scores = [self.evaluationFunction(gameState, action) for action in legalMoves ]
         print(scores)
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
@@ -77,7 +76,7 @@ class ReflexAgent(Agent):
         newPos = successorGameState.getPacmanPosition()
         newFood = successorGameState.getFood()
         newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates ]
 
         "*** YOUR CODE HERE ***"
         # strategy 1:
@@ -86,16 +85,25 @@ class ReflexAgent(Agent):
         # if the ghost is not scared, then we want to go to the closest ghost
         
         # distance from all food
+
         food_distance = 0 
+        minsofar=1e10
+        oldFood=currentGameState.getFood()
         for food in newFood.asList():
-            if manhattanDistance(newPos, food) > 0:
-                food_distance += p_param/manhattanDistance(newPos, food)
-            else:
-                food_distance += r_param
+            if manhattanDistance(newPos, food) < minsofar:
+                minsofar = manhattanDistance(newPos, food)
+            
+        print("newPos", newPos,"food", newFood.asList(), "minsofar", minsofar)
+        print("minsofar: ", minsofar)
+        if minsofar == 0:
+            food_distance = 100
+        else:
+            food_distance = 100/(minsofar+1)
         # distance from all ghost
         ghost_distance = 0
         for ghost in newGhostStates:
             if ghost.scaredTimer > 0:
+                # scared ghost
                 if manhattanDistance(newPos, ghost.getPosition()) > 0:
                     ghost_distance += q_param/manhattanDistance(newPos, ghost.getPosition())
                 else:
@@ -172,6 +180,42 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
+        # helper function max-value
+        def max_value(gameState,depth):
+            # when max depth is reached or win or loose condition
+            if depth>=self.depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            else:
+                actionList=gameState.getLegalActions(0)
+                successorList=[]
+                for action in actionList:
+                    successorList+=[min_value(gameState.generateSuccessor(0, action),depth+1)]
+                return max(successorList)
+        def min_value(gameState,depth):
+            # when max depth is reached or win or loose condition
+            if depth>=self.depth or gameState.isLose() or gameState.isWin():
+                return self.evaluationFunction(gameState)
+            else:
+                for agentIndex in range(1,gameState.getNumAgents()):                    
+                    actionList=gameState.getLegalActions(agentIndex)
+                    successorList=[]
+                    for action in actionList:
+                        # print(gameState.getNumAgents(),agentIndex)
+                        successorList+=[max_value(gameState.generateSuccessor(agentIndex, action),depth+1)]
+                return min(successorList)
+        actionList=gameState.getLegalActions(0)
+        valList=[]
+        action_to_take=None
+        max_so_far=None
+        for action in actionList:
+            # assumed that initially pacman is taking the action
+            # Hence taking max of all minvalues
+            temp=min_value(gameState.generateSuccessor(0, action),0)
+            if max_so_far==None or temp>max_so_far:
+                max_so_far=temp
+                action_to_take=action
+        print(max_so_far)
+        return action_to_take
         util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
