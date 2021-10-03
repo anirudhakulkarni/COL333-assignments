@@ -84,37 +84,37 @@ class ReflexAgent(Agent):
         # if the ghost is not scared, then we want to go to the closest food
         # if the ghost is not scared, then we want to go to the closest ghost
         
-        # distance from all food
-
+        # score due to food
         food_distance = 0 
         minsofar=1e10
-        oldFood=currentGameState.getFood()
         for food in newFood.asList():
             if manhattanDistance(newPos, food) < minsofar:
                 minsofar = manhattanDistance(newPos, food)
-            
-        print("newPos", newPos,"food", newFood.asList(), "minsofar", minsofar)
-        print("minsofar: ", minsofar)
-        if minsofar == 0:
-            food_distance = 100
-        else:
-            food_distance = 100/(minsofar+1)
-        # distance from all ghost
-        ghost_distance = 0
+
+        food_score = -minsofar-len(newFood.asList())
+        # score due to ghost
+        ghost_score = 0
         for ghost in newGhostStates:
             if ghost.scaredTimer > 0:
                 # scared ghost
-                if manhattanDistance(newPos, ghost.getPosition()) > 0:
-                    ghost_distance += q_param/manhattanDistance(newPos, ghost.getPosition())
+                
+                if manhattanDistance(newPos,ghost.getPosition())<3:
+                    return 1e10
                 else:
-                    ghost_distance += s_param
+                    ghost_score += q_param/manhattanDistance(newPos, ghost.getPosition())
+
             else:
-                if manhattanDistance(newPos, ghost.getPosition()) > 0:
-                    ghost_distance -= q_param/manhattanDistance(newPos, ghost.getPosition())
+                if manhattanDistance(newPos,ghost.getPosition())<2:
+                    ghost_score=-1e10
                 else:
-                    ghost_distance -= s_param
-        print(food_distance, ghost_distance)
-        return food_distance+ghost_distance
+                    ghost_score -= q_param/manhattanDistance(newPos, ghost.getPosition())
+        print(food_distance, ghost_score)
+        # score due to capsules
+        capsules=successorGameState.getCapsules()
+        capsuleScore=0
+        for capsule in capsules:
+            capsuleScore+=100/float(manhattanDistance(newPos,capsule))
+        return food_score+ghost_score+capsuleScore
         print(successorGameState.getScore())
 
         # end strategy 1
