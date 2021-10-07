@@ -94,7 +94,7 @@ class ReflexAgent(Agent):
         if successorGameState.isWin():
             return 1e11
         if successorGameState.isLose():
-            ghost_score-=1e11
+            ghost_score -= 1e11
         maxscore = 0
         minsofar = 1e10
         maxsofar = -1e10
@@ -108,9 +108,9 @@ class ReflexAgent(Agent):
                 maxsofar = max(maxsofar, manhattanDistance(food1, food2))
         food_score = -minsofar-10*len(newFood.asList())-maxsofar
         # score due to ghost
-        
-        if len(newGhostStates)==0:
-            return 
+
+        if len(newGhostStates) == 0:
+            return
         for ghost in newGhostStates:
             if ghost.scaredTimer > 0:
                 # scared ghost
@@ -128,7 +128,7 @@ class ReflexAgent(Agent):
                         manhattanDistance(newPos, ghost.getPosition())
         # print(food_distance, ghost_score)
         # score due to capsules
-        
+
         capsules = successorGameState.getCapsules()
         capsuleScore = 0
         capsule_minsofar = 1e10
@@ -349,6 +349,9 @@ def betterEvaluationFunction(currentGameState):
     evaluation function (question 5).
 
     DESCRIPTION: <write something here so we know what you did>
+    So we are assigning evaluation value of current state based on the manhattan distance of foods, ghosts and capsules.
+    For foods, capsules and scared ghosts, we are assigning negative eval values so that pacman will go to the new state where he can get points.
+    For ghost it is just opposite.
     """
     "*** YOUR CODE HERE ***"
     ghosts = currentGameState.getGhostStates()
@@ -360,30 +363,34 @@ def betterEvaluationFunction(currentGameState):
     final_eval_score += -20*(len(capsules))
     final_eval_score += -10*(len(foods))
 
+    food_scores_list = []
     for food in foods:
         food_distance = manhattanDistance(pacman_position, food)
         if food_distance < 2:
-            final_eval_score += -1*food_distance
+            food_scores_list.append(-1*food_distance)
         elif food_distance < 6:
-            final_eval_score += -0.5*food_distance
+            food_scores_list.append(-0.5*food_distance)
         else:
-            final_eval_score += -0.25*food_distance
+            food_scores_list.append(-0.25*food_distance)
+    final_eval_score += sum(food_scores_list)
 
+    ghost_score_list = []
     for ghost in ghosts:
         ghost_distance = manhattanDistance(
             pacman_position, ghost.getPosition())
         if ghost.scaredTimer:
             if ghost_distance < 2:
-                final_eval_score += -20*ghost_distance
+                ghost_score_list.append(-20*ghost_distance)
             else:
-                final_eval_score += -8*ghost_distance
+                ghost_score_list.append(-8*ghost_distance)
         else:
             if ghost_distance < 2:
-                final_eval_score += 4*ghost_distance
+                ghost_score_list.append(4*ghost_distance)
             elif ghost_distance < 6:
-                final_eval_score += 2*ghost_distance
+                ghost_score_list.append(2*ghost_distance)
             else:
-                final_eval_score += 0.5*ghost_distance
+                ghost_score_list.append(0.5*ghost_distance)
+    final_eval_score += sum(ghost_score_list)
 
     for capsule in capsules:
         capsule_distance = manhattanDistance(pacman_position, capsule)
