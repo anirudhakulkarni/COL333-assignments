@@ -90,7 +90,7 @@ class ReflexAgent(Agent):
         # if the ghost is not scared, then we want to go to the closest ghost
 
         # score due to food
-        food_distance = 0
+        maxscore = 0
         minsofar = 1e10
         maxsofar = -1e10
         if len(newFood.asList()) ==0:
@@ -104,23 +104,27 @@ class ReflexAgent(Agent):
         food_score = -minsofar-10*len(newFood.asList())-maxsofar
         # score due to ghost
         ghost_score = 0
+        if len(newGhostStates)==0:
+            return 
         for ghost in newGhostStates:
             if ghost.scaredTimer > 0:
                 # scared ghost
-                if manhattanDistance(newPos, ghost.getPosition()) < 4:
-                    return 1e10
+                if manhattanDistance(newPos, ghost.getPosition()) < 2:
+                    return ghost_score+1e10
                 else:
                     ghost_score += q_param / \
                         manhattanDistance(newPos, ghost.getPosition())
 
             else:
                 if manhattanDistance(newPos, ghost.getPosition()) < 2:
-                    ghost_score = -1e10
+                    ghost_score -= 1e10
                 else:
                     ghost_score -= q_param / \
                         manhattanDistance(newPos, ghost.getPosition())
         # print(food_distance, ghost_score)
         # score due to capsules
+        
+        ghost_score-=len(newGhostStates)*10000
         capsules = successorGameState.getCapsules()
         capsuleScore = 0
         capsule_minsofar=1e10
@@ -342,7 +346,6 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    
     util.raiseNotDefined()
 
 
