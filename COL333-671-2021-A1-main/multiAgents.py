@@ -89,8 +89,12 @@ class ReflexAgent(Agent):
         # if the ghost is not scared, then we want to go to the closest food
         # if the ghost is not scared, then we want to go to the closest ghost
 
+        ghost_score = 0
         # score due to food
-
+        if successorGameState.isWin():
+            return float("inf")
+        if successorGameState.isLose():
+            ghost_score-=1e11
         maxscore = 0
         minsofar = 1e10
         maxsofar = -1e10
@@ -104,7 +108,7 @@ class ReflexAgent(Agent):
                 maxsofar = max(maxsofar, manhattanDistance(food1, food2))
         food_score = -minsofar-10*len(newFood.asList())-maxsofar
         # score due to ghost
-        ghost_score = 0
+        
         if len(newGhostStates)==0:
             return 
         for ghost in newGhostStates:
