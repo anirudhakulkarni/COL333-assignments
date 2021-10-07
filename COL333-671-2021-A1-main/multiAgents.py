@@ -92,7 +92,7 @@ class ReflexAgent(Agent):
         ghost_score = 0
         # score due to food
         if successorGameState.isWin():
-            return float("inf")
+            return 1e11
         if successorGameState.isLose():
             ghost_score-=1e11
         maxscore = 0
