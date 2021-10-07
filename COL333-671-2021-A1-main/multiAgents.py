@@ -50,7 +50,7 @@ class ReflexAgent(Agent):
         # Choose one of the best actions
         scores = [self.evaluationFunction(
             gameState, action) for action in legalMoves]
-        print(scores)
+        # print(scores)
         bestScore = max(scores)
         bestIndices = [index for index in range(
             len(scores)) if scores[index] == bestScore]
@@ -92,18 +92,22 @@ class ReflexAgent(Agent):
         # score due to food
         food_distance = 0
         minsofar = 1e10
+        maxsofar = -1e10
+        if len(newFood.asList()) ==0:
+            minsofar=0
+            maxsofar=0
         for food in newFood.asList():
-            if manhattanDistance(newPos, food) < minsofar:
-                minsofar = manhattanDistance(newPos, food)
-
-        food_score = -minsofar-len(newFood.asList())
+            minsofar=min(minsofar,manhattanDistance(newPos,food))
+        for food1 in newFood.asList():
+            for food2 in newFood.asList():
+                maxsofar=max(maxsofar,manhattanDistance(food1,food2))
+        food_score = -minsofar-10*len(newFood.asList())-maxsofar
         # score due to ghost
         ghost_score = 0
         for ghost in newGhostStates:
             if ghost.scaredTimer > 0:
                 # scared ghost
-
-                if manhattanDistance(newPos, ghost.getPosition()) < 3:
+                if manhattanDistance(newPos, ghost.getPosition()) < 4:
                     return 1e10
                 else:
                     ghost_score += q_param / \
@@ -115,12 +119,16 @@ class ReflexAgent(Agent):
                 else:
                     ghost_score -= q_param / \
                         manhattanDistance(newPos, ghost.getPosition())
-        print(food_distance, ghost_score)
+        # print(food_distance, ghost_score)
         # score due to capsules
         capsules = successorGameState.getCapsules()
         capsuleScore = 0
+        capsule_minsofar=1e10
+        if len(capsules)==0:
+            capsule_minsofar=0
         for capsule in capsules:
-            capsuleScore += 100/float(manhattanDistance(newPos, capsule))
+            capsule_minsofar=min(capsule_minsofar,manhattanDistance(newPos,capsule))
+        capsuleScore = -capsule_minsofar-10*len(capsules)
         return food_score+ghost_score+capsuleScore
         print(successorGameState.getScore())
 
@@ -274,7 +282,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             return val_action
 
         final_val_action = alpha_beta(
-            0, gameState, 0, float('-inf'), float('inf'))
+            0, gameState, 0, float('inf'), float('-inf'))
         # print(final_val_action[0])
         return final_val_action[1]
         # util.raiseNotDefined()
@@ -334,6 +342,7 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    
     util.raiseNotDefined()
 
 
