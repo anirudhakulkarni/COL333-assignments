@@ -81,7 +81,23 @@ class Problem():
                         self.backtrack(child)
                     root.data[i][j] = 0
         return False
-
+    def AC3(self, root):
+        # AC-3 algorithm
+        queue = []
+        for i in range(self.nurses):
+            for j in range(self.days):
+                if root.data[i][j] == 0:
+                    queue.append((i, j))
+        while len(queue) > 0:
+            i, j = queue.pop(0)
+            for k in range(self.nurses):
+                if self.check_validity(root.data, i, j, k):
+                    root.data[i][j] = k
+                    for l in range(self.days):
+                        if root.data[k][l] == 0:
+                            queue.append((k, l))
+        return root
+        
 if __name__ == "__main__":
     # take input from csv file from argument 1
     # nurses, days, mornings, afternoons, evenings
