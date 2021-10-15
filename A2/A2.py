@@ -6,7 +6,13 @@ import json
 
 
 class Tree():
-    # Tree classs for tree
+    '''
+    Internal node in the bigger tree. Contains the mapping of nurses to shifts in each day and corresponds to a state.
+    Methods:
+        1. get_children: returns another state which is one step away from the current state.
+        
+    '''
+
     def __init__(self, data, parent=None):
         self.data = data
         self.parent = parent
@@ -20,20 +26,28 @@ class Tree():
     def add_child(self, obj):
         self.children.append(obj)
 
-    
     # for debugging
+
     def __str__(self):
         return str(self.data)
 
 
 class Problem():
+    '''
+    External search space graph. Contains graph of states and methods to traverse it.
+    Methods:
+        1. check_validity: checks if the problem is valid
+        2. solve: solves the problem using AC-3 algorithm
+    '''
+
+
     def __init__(self, nurses, days, mornings, afternoons, evenings):
         self.nurses = nurses
         self.days = days
         self.mornings = mornings
         self.afternoons = afternoons
         self.evenings = evenings
-    
+
     def check_validity(self):
         # check if the problem is valid
         if self.nurses < 1 or self.days < 1 or self.mornings < 1 or self.afternoons < 1 or self.evenings < 1:
@@ -41,9 +55,32 @@ class Problem():
         if self.mornings+self.afternoons+self.evenings > self.days:
             return False
         return True
-    
+
     def solve(self):
-        return [{}]
+        # solve the problem using AC-3 algorithm
+        if not self.check_validity():
+            print("Invalid problem")
+            return [{}]
+        root = Tree(self.nurses*self.days)
+        self.backtrack(root)
+        return self.get_solution(root)
+
+    def backtrack(self, root):
+        # backtrack the tree
+        if root.data == 0:
+            return True
+        if root.data == 1:
+            return False
+        for i in range(self.nurses):
+            for j in range(self.days):
+                if root.data[i][j] == 0:
+                    root.data[i][j] = 1
+                    if self.check_validity(root.data):
+                        child = Tree(root.data, root)
+                        root.add_child(child)
+                        self.backtrack(child)
+                    root.data[i][j] = 0
+        return False
 
 if __name__ == "__main__":
     # take input from csv file from argument 1
