@@ -57,6 +57,7 @@ class Problem():
             # constraint 3: nurse can not work in morning shift if she has worked evening shift previous day
             self.edges[self.nodes[i*3+2]].append(self.nodes[i*3+3])
 
+
     def check_validity(self):
         # check if the problem is valid
         if self.total_nurses < 1 or self.total_days < 1 or self.total_mornings < 1 or self.total_afternoons < 1 or self.total_evenings < 1:
@@ -64,6 +65,29 @@ class Problem():
         if self.total_mornings+self.total_afternoons+self.total_evenings > self.total_days:
             return False
         return True
+
+    def ac3(self,root):
+        queue = []
+        for node1 in self.edges:
+            for node2 in self.edges[node1]:
+                queue.append((node1, node2))
+        while len(queue) > 0:
+            node1, node2 = queue.pop(0)
+            if self.revise(node1, node2):
+                if len(node1.domains_available) == 0:
+                    return False
+                for node3 in self.edges[node1]:
+                    if node3 != node2:
+                        queue.append((node3, node1))
+        return True
+
+    def revise(self, node1, node2):
+        revised = False
+        for i in node1.domains_available:
+            if not self.constraint_satisfied(node1, node2, i):
+                node1.domains_available.remove(i)
+                revised = True
+        return revised
 
     def backtrack(self, root):
         # backtrack the tree
@@ -81,23 +105,6 @@ class Problem():
                         self.backtrack(child)
                     root.data[i][j] = 0
         return False
-
-    def AC3(self, root):
-        # AC-3 algorithm
-        queue = []
-        for i in range(self.nurses):
-            for j in range(self.days):
-                if root.data[i][j] == 0:
-                    queue.append((i, j))
-        while len(queue) > 0:
-            i, j = queue.pop(0)
-            for k in range(self.nurses):
-                if self.check_validity(root.data, i, j, k):
-                    root.data[i][j] = k
-                    for l in range(self.days):
-                        if root.data[k][l] == 0:
-                            queue.append((k, l))
-        return root
 
 
 if __name__ == "__main__":
