@@ -3,6 +3,7 @@
 import csv
 import sys
 import json
+import copy
 
 
 class Node():
@@ -14,7 +15,7 @@ class Node():
         self.day = day
         self.shift = None
         self.nurse = nurse
-        self.domains_available = shift_arr
+        self.domains_available = copy.deepcopy(shift_arr)
         self.isFinal = False
         self.edges = []
 
@@ -80,11 +81,16 @@ class Problem():
         return True'''
 
     def ac(self, node1):
+        #count = 0
         queue = []
+        if(len(node1.edges) == 0):
+            return True
         for node2 in node1.edges:
             queue.append((node1, node2))
         #queue.append((node1, self.edges[node1]))
+
         while(len(queue) > 0):
+            #count += 1
             n1, n2 = queue.pop(0)
             if(self.revise(n1, n2)):
                 if(len(n2.domains_available) == 0):
@@ -92,6 +98,7 @@ class Problem():
                 for node3 in node2.edges:
                     queue.append((node2, node3))
                 #queue.append((n2, self.edges[n2]))
+        # print(count)
         return True
 
     def constraint_satisfied(self, node1, node2, i):
@@ -108,6 +115,7 @@ class Problem():
         for i in node2.domains_available:
             if not self.constraint_satisfied(node1, node2, i):
                 node2.domains_available.remove(i)
+                # print("r")
                 revised = True
         return revised
 
@@ -132,39 +140,44 @@ class Problem():
         if(d == p.total_days):
             return True
 
-        p_old = p
+        #count_old = count
         curr_node = p.nodes[d*self.total_nurses+nurse]
         da = curr_node.domains_available
 
         # assigning shift from available shift
         if(len(da) == 0):
             return False
+        #print(d, nurse, da)
         for val in da:
             if(val == "R" or count[val] < self.total_count[val]):
-                p = p_old
-                curr_node = p.nodes[d*self.total_nurses+nurse]
+                p_new = copy.deepcopy(p)
+                curr_node = p_new.nodes[d*self.total_nurses+nurse]
                 curr_node.shift = val
                 curr_node.domains_available = [val, ]
-                #curr_node.isFinal = True
 
                 # running ac3
-                flag = self.ac(curr_node)
+                flag = p_new.ac(curr_node)
+
+                #flag = True
                 if flag:
-                    count_new = count
-                    d_ = d
-                    nurse_ = nurse
-                    if(nurse_ == self.total_nurses-1):
-                        d_ += 1
+                    d_new = copy.copy(d)
+                    nurse_new = copy.copy(nurse)
+                    count_new = copy.deepcopy(count)
+                    if(nurse_new == self.total_nurses-1):
+                        d_new += 1
                         count_new["M"] = 0
                         count_new["A"] = 0
                         count_new["E"] = 0
                     elif(val != "R"):
                         count_new[val] += 1
-                    flag2 = self.search(p, d_, (nurse_+1) %
-                                        (self.total_nurses), count_new)
+                    nurse_new = (nurse_new+1) % self.total_nurses
+                    flag2 = self.search(p_new, d_new, nurse_new, count_new)
                     if(flag2):
-                        curr_node.isFinal = True
-                        #count = count_new
+                        node_to_update = self.nodes[d*self.total_nurses+nurse]
+                        node_to_update.isFinal = True
+                        node_to_update.shift = val
+                        # print(da)
+                        #print(d, nurse, val)
                         return True
         return False
 
@@ -206,9 +219,9 @@ if __name__ == "__main__":
                     roaster_solution = roaster.sol()
                     print(roaster_solution)
                 else:
-                    roaster_solution = "NO-SOLUTION"
+                    roaster_solution = {"NO-SOLUTION": -1}
             else:
-                roaster_solution = "NO-SOLUTION"
+                roaster_solution = {"NO-SOLUTION": -1}
             roaster_solution_list.append(roaster_solution)
             # save roaster solution in json file
         with open('solution.json', 'w') as outfile:
