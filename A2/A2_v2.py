@@ -4,6 +4,8 @@ import csv
 import sys
 import json
 import copy
+import sys
+sys.setrecursionlimit(2500)
 
 
 class Node():
@@ -219,12 +221,15 @@ if __name__ == "__main__":
                     roaster_solution = roaster.sol()
                     print(roaster_solution)
                 else:
-                    roaster_solution = {"NO-SOLUTION": -1}
+                    # roaster_solution = {"NO-SOLUTION": -1}
+                    roaster_solution = {}
             else:
-                roaster_solution = {"NO-SOLUTION": -1}
+                # roaster_solution = {"NO-SOLUTION": -1}
+                roaster_solution = {}
             roaster_solution_list.append(roaster_solution)
             # save roaster solution in json file
+
         with open('solution.json', 'w') as outfile:
-            for d in roaster_solution:
+            for d in roaster_solution_list:
                 json.dump(d, outfile)
                 outfile.write('\n')
