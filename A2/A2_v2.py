@@ -5,6 +5,7 @@ import sys
 import json
 import copy
 import sys
+import time
 sys.setrecursionlimit(2500)
 
 
@@ -61,9 +62,15 @@ class Problem():
 
     def check_validity(self):
         # check if the problem is valid
+        # r+a<m no solution
+        # if self.
+        if self.total_nurses-self.m-self.e < self.m:
+            return False
         if self.total_nurses < 1 or self.total_days < 1 or self.m < 1 or self.a < 1 or self.e < 1:
             return False
         if self.m+self.a+self.e > self.total_nurses:
+            return False
+        if self.m+self.a+self.e == self.total_nurses and self.total_days >= 7:
             return False
         return True
 
@@ -138,18 +145,26 @@ class Problem():
                     root.data[i][j] = 0
         return False'''
 
-    def search(self, p, d, nurse, count):
+    def get_domain(self, node):
+        # a+r=m : domain=[m]
+        # r+a<m no solution
+        # m is reached domain = [a,r]
+        # a is reached
+        return node.domains_available
+
+    def search(self, p, d, nurse, count, day7_set):
         if(d == p.total_days):
             return True
 
         #count_old = count
         curr_node = p.nodes[d*self.total_nurses+nurse]
+        # da = self.get_domain(curr_node.domains_available)
         da = curr_node.domains_available
-
         # assigning shift from available shift
         if(len(da) == 0):
             return False
         #print(d, nurse, da)
+        t1 = time.time()
         for val in da:
             if(val == "R" or count[val] < self.total_count[val]):
                 p_new = copy.deepcopy(p)
@@ -158,29 +173,45 @@ class Problem():
                 curr_node.domains_available = [val, ]
 
                 # running ac3
-                flag = p_new.ac(curr_node)
 
+                flag = p_new.ac(curr_node)
                 #flag = True
                 if flag:
                     d_new = copy.copy(d)
                     nurse_new = copy.copy(nurse)
                     count_new = copy.deepcopy(count)
+                    day7_set_new = copy.deepcopy(day7_set)
+                    if(val == "R"):
+                        day7_set_new.add(nurse)
+                    flag3 = True
                     if(nurse_new == self.total_nurses-1):
                         d_new += 1
+                        if(d_new != 0 and d_new % 7 == 0):
+                            if(len(day7_set_new) == self.total_nurses):
+                                day7_set_new = set()
+                            else:
+                                flag3 = False
                         count_new["M"] = 0
                         count_new["A"] = 0
                         count_new["E"] = 0
                     elif(val != "R"):
                         count_new[val] += 1
                     nurse_new = (nurse_new+1) % self.total_nurses
-                    flag2 = self.search(p_new, d_new, nurse_new, count_new)
-                    if(flag2):
-                        node_to_update = self.nodes[d*self.total_nurses+nurse]
-                        node_to_update.isFinal = True
-                        node_to_update.shift = val
-                        # print(da)
-                        #print(d, nurse, val)
-                        return True
+                    if(flag3):
+                        flag2 = self.search(
+                            p_new, d_new, nurse_new, count_new, day7_set_new)
+                        if(flag2):
+                            '''if(d_new%7 == 0):
+                                .check_week()'''
+                            node_to_update = self.nodes[d *
+                                                        self.total_nurses+nurse]
+                            node_to_update.isFinal = True
+                            node_to_update.shift = val
+                            # print(da)
+                            #print(d, nurse, val)
+                            return True
+        t2 = time.time()
+        # print(t2-t1)
         return False
 
     def sol(self):
@@ -215,17 +246,26 @@ if __name__ == "__main__":
             roaster = Problem(nurses, days, mornings,
                               afternoons, evenings, ["M", "A", "E", "R"])
             if roaster.check_validity():
+                a = set()
+                t1 = time.time()
                 sol_exist = roaster.search(
-                    roaster, 0, 0, {"M": 0, "A": 0, "E": 0})
+                    roaster, 0, 0, {"M": 0, "A": 0, "E": 0}, a)
+                t2 = time.time()
+                print("Time taken for search: ", t2-t1)
                 if(sol_exist):
+                    t3 = time.time()
+                    print("Time taken for solutionexists:", t3-t2)
                     roaster_solution = roaster.sol()
-                    print(roaster_solution)
+                    t4 = time.time()
+                    print("Time taken for sol:", t4-t3)
                 else:
                     # roaster_solution = {"NO-SOLUTION": -1}
                     roaster_solution = {}
             else:
                 # roaster_solution = {"NO-SOLUTION": -1}
+
                 roaster_solution = {}
+            print(roaster_solution)
             roaster_solution_list.append(roaster_solution)
             # save roaster solution in json file
 
