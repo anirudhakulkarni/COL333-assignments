@@ -63,6 +63,8 @@ class Problem():
             return False
         if self.m+self.a+self.e > self.total_nurses:
             return False
+        if self.m+self.a+self.e == self.total_nurses and self.total_days >= 7:
+            return False
         return True
 
     '''def ac3(self, node_changed):
@@ -136,7 +138,7 @@ class Problem():
                     root.data[i][j] = 0
         return False'''
 
-    def search(self, p, d, nurse, count):
+    def search(self, p, d, nurse, count, day7_set):
         if(d == p.total_days):
             return True
 
@@ -163,22 +165,36 @@ class Problem():
                     d_new = copy.copy(d)
                     nurse_new = copy.copy(nurse)
                     count_new = copy.deepcopy(count)
+                    day7_set_new = copy.deepcopy(day7_set)
+                    if(val == "R"):
+                        day7_set_new.add(nurse)
+                    flag3 = True
                     if(nurse_new == self.total_nurses-1):
                         d_new += 1
+                        if(d_new != 0 and d_new % 7 == 0):
+                            if(len(day7_set_new) == self.total_nurses):
+                                day7_set_new = set()
+                            else:
+                                flag3 = False
                         count_new["M"] = 0
                         count_new["A"] = 0
                         count_new["E"] = 0
                     elif(val != "R"):
                         count_new[val] += 1
                     nurse_new = (nurse_new+1) % self.total_nurses
-                    flag2 = self.search(p_new, d_new, nurse_new, count_new)
-                    if(flag2):
-                        node_to_update = self.nodes[d*self.total_nurses+nurse]
-                        node_to_update.isFinal = True
-                        node_to_update.shift = val
-                        # print(da)
-                        #print(d, nurse, val)
-                        return True
+                    if(flag3):
+                        flag2 = self.search(
+                            p_new, d_new, nurse_new, count_new, day7_set_new)
+                        if(flag2):
+                            '''if(d_new%7 == 0):
+                                .check_week()'''
+                            node_to_update = self.nodes[d *
+                                                        self.total_nurses+nurse]
+                            node_to_update.isFinal = True
+                            node_to_update.shift = val
+                            # print(da)
+                            #print(d, nurse, val)
+                            return True
         return False
 
     def sol(self):
@@ -213,18 +229,19 @@ if __name__ == "__main__":
             roaster = Problem(nurses, days, mornings,
                               afternoons, evenings, ["M", "A", "E", "R"])
             if roaster.check_validity():
+                a = set()
                 sol_exist = roaster.search(
-                    roaster, 0, 0, {"M": 0, "A": 0, "E": 0})
+                    roaster, 0, 0, {"M": 0, "A": 0, "E": 0}, a)
                 if(sol_exist):
                     roaster_solution = roaster.sol()
-                    print(roaster_solution)
                 else:
-                    roaster_solution = {"NO-SOLUTION": -1}
+                    roaster_solution = {}
             else:
-                roaster_solution = {"NO-SOLUTION": -1}
+                roaster_solution = {}
+            print(roaster_solution)
             roaster_solution_list.append(roaster_solution)
             # save roaster solution in json file
         with open('solution.json', 'w') as outfile:
-            for d in roaster_solution:
+            for d in roaster_solution_list:
                 json.dump(d, outfile)
                 outfile.write('\n')
