@@ -4,9 +4,7 @@ import csv
 import sys
 import json
 import copy
-import sys
-import time
-sys.setrecursionlimit(2500)
+sys.setrecursionlimit(4500)
 
 
 class Node():
@@ -21,6 +19,7 @@ class Node():
         self.domains_available = copy.deepcopy(shift_arr)
         self.isFinal = False
         self.edges = []
+        self.back_node = None
 
     def __str__(self):
         return str(self.day) + " " + str(self.nurse) + " " + str(self.shift)
@@ -43,10 +42,11 @@ class Problem():
         self.m = m  # m
         self.a = a  # a
         self.e = e  # e
+        self.r = self.total_nurses-(self.a+self.m+self.e)
         self.total_count = {"M": m, "A": a, "E": e}
         self.shift_array = shift_arr
         self.nodes = []
-        #self.edges = {}
+        # self.edges = {}
         for i in range(self.total_days):
             for j in range(self.total_nurses):
                 new_node = Node(i, j, self.shift_array)
@@ -55,17 +55,15 @@ class Problem():
         for i in range(self.total_days-1):
             for j in range(self.total_nurses):
                 # constraint 2: no nurse works two morning shifts in a row
-                #self.edges[self.nodes[i*self.total_nurses+j]] = [self.nodes[(i+1)*self.total_nurses+j], ]
-                #self.edges[self.nodes[i*self.total_nurses+j]] = self.nodes[(i+1)*self.total_nurses+j]
+                # self.edges[self.nodes[i*self.total_nurses+j]] = [self.nodes[(i+1)*self.total_nurses+j], ]
+                # self.edges[self.nodes[i*self.total_nurses+j]] = self.nodes[(i+1)*self.total_nurses+j]
                 self.nodes[i*self.total_nurses +
                            j].edges.append(self.nodes[(i+1)*self.total_nurses+j])
+                self.nodes[(i+1)*self.total_nurses +
+                           j].back_node = (self.nodes[i*self.total_nurses+j])
 
     def check_validity(self):
         # check if the problem is valid
-        # r+a<m no solution
-        # if self.
-        if self.total_nurses-self.m-self.e < self.m:
-            return False
         if self.total_nurses < 1 or self.total_days < 1 or self.m < 1 or self.a < 1 or self.e < 1:
             return False
         if self.m+self.a+self.e > self.total_nurses:
@@ -90,23 +88,39 @@ class Problem():
         return True'''
 
     def ac(self, node1):
-        #count = 0
+        # a+r==m then left a or r then only M else
+        # count = 0
+        if(len(node1.edges) > 0):
+            node2_ = node1.edges[0]
+            if(node2_.day % 7 == 6):
+                is_r = False
+                curr_node = copy.copy(node2_)
+                curr_node = curr_node.back_node
+                for i in range(6):
+                    if(curr_node.shift == "R"):
+                        is_r = True
+                        break
+                    if(i < 5):
+                        curr_node = curr_node.back_node
+                if(is_r == False):
+                    node2_.domains_available = ["R"]
+                    return True
         queue = []
         if(len(node1.edges) == 0):
             return True
         for node2 in node1.edges:
             queue.append((node1, node2))
-        #queue.append((node1, self.edges[node1]))
+        # queue.append((node1, self.edges[node1]))
 
         while(len(queue) > 0):
-            #count += 1
+            # count += 1
             n1, n2 = queue.pop(0)
             if(self.revise(n1, n2)):
                 if(len(n2.domains_available) == 0):
                     return False
                 for node3 in node2.edges:
                     queue.append((node2, node3))
-                #queue.append((n2, self.edges[n2]))
+                # queue.append((n2, self.edges[n2]))
         # print(count)
         return True
 
@@ -115,12 +129,22 @@ class Problem():
             da_n1 = node1.domains_available
             if(len(da_n1) == 1 and (da_n1[0] == i or da_n1[0] == "E")):
                 return False
-            elif(len(da_n1) == 2 and da_n1[0] == i and da_n1[1] == "E"):
+            elif(len(da_n1) == 2 and ((da_n1[0] == i and da_n1[1] == "E") or (da_n1[0] == "E" and da_n1[1] == i))):
                 return False
         return True
 
     def revise(self, node1, node2):
         revised = False
+        da_n1 = node1.domains_available
+        if(self.a+self.r == self.m):
+            if(len(da_n1) == 1 and (da_n1[0] == "A" or da_n1[0] == "R")):
+                node2.domains_available = ["M"]
+                revised = True
+                return revised
+            if(len(da_n1) == 1 and ((da_n1[0] == "A" and da_n1[1] == "R") or (da_n1[0] == "R" and da_n1[1] == "A"))):
+                node2.domains_available = ["M"]
+                revised = True
+                return revised
         for i in node2.domains_available:
             if not self.constraint_satisfied(node1, node2, i):
                 node2.domains_available.remove(i)
@@ -145,26 +169,19 @@ class Problem():
                     root.data[i][j] = 0
         return False'''
 
-    def get_domain(self, node):
-        # a+r=m : domain=[m]
-        # r+a<m no solution
-        # m is reached domain = [a,r]
-        # a is reached
-        return node.domains_available
-
     def search(self, p, d, nurse, count, day7_set):
         if(d == p.total_days):
             return True
 
-        #count_old = count
+        # count_old = count
         curr_node = p.nodes[d*self.total_nurses+nurse]
-        # da = self.get_domain(curr_node.domains_available)
         da = curr_node.domains_available
+        # print(da)
+
         # assigning shift from available shift
         if(len(da) == 0):
             return False
-        #print(d, nurse, da)
-        t1 = time.time()
+        # print(d, nurse, da)
         for val in da:
             if(val == "R" or count[val] < self.total_count[val]):
                 p_new = copy.deepcopy(p)
@@ -173,9 +190,9 @@ class Problem():
                 curr_node.domains_available = [val, ]
 
                 # running ac3
-
                 flag = p_new.ac(curr_node)
-                #flag = True
+
+                # flag = True
                 if flag:
                     d_new = copy.copy(d)
                     nurse_new = copy.copy(nurse)
@@ -208,10 +225,8 @@ class Problem():
                             node_to_update.isFinal = True
                             node_to_update.shift = val
                             # print(da)
-                            #print(d, nurse, val)
+                            # print(d, nurse, val)
                             return True
-        t2 = time.time()
-        # print(t2-t1)
         return False
 
     def sol(self):
@@ -244,32 +259,20 @@ if __name__ == "__main__":
             afternoons = int(row[3])
             evenings = int(row[4])
             roaster = Problem(nurses, days, mornings,
-                              afternoons, evenings, ["M", "A", "E", "R"])
+                              afternoons, evenings, ["A", "E", "M", "R"])
             if roaster.check_validity():
                 a = set()
-                t1 = time.time()
                 sol_exist = roaster.search(
                     roaster, 0, 0, {"M": 0, "A": 0, "E": 0}, a)
-                t2 = time.time()
-                print("Time taken for search: ", t2-t1)
                 if(sol_exist):
-                    t3 = time.time()
-                    print("Time taken for solutionexists:", t3-t2)
                     roaster_solution = roaster.sol()
-                    t4 = time.time()
-                    print("Time taken for sol:", t4-t3)
                 else:
-                    # roaster_solution = {"NO-SOLUTION": -1}
                     roaster_solution = {}
             else:
-                # roaster_solution = {"NO-SOLUTION": -1}
-
                 roaster_solution = {}
             print(roaster_solution)
             roaster_solution_list.append(roaster_solution)
-            # save roaster solution in json file
-
-        with open('solution.json', 'w') as outfile:
-            for d in roaster_solution_list:
-                json.dump(d, outfile)
-                outfile.write('\n')
+            # append roaster solution in json file
+            with open("solution.json", "a") as jsonfile:
+                json.dump(roaster_solution, jsonfile)
+                jsonfile.write("\n")
