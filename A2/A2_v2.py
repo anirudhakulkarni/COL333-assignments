@@ -245,6 +245,9 @@ if __name__ == "__main__":
         filename = sys.argv[1]
     except:
         filename = "input_a.csv"
+    with open("solution.json", "a") as jsonfile:
+        # clear contents of the file
+        jsonfile.truncate(0)
     with open(filename, 'r') as csvfile:
         reader = csv.reader(csvfile)
         row_list = []
