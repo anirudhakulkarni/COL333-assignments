@@ -1,6 +1,9 @@
+import pygame
 import random
 import numpy as np
 from collections import defaultdict
+
+from numpy.lib.arraysetops import isin
 
 '''
 	Solving taxi problem with MDP
@@ -21,6 +24,7 @@ from collections import defaultdict
 
 depots = [(0, 0), (0, 4), (3, 0), (4, 4)]
 actions = [(0, 1), (0, -1), (-1, 0), (1, 0)]  # north, south, east and west
+completeActions = [(0, 1), (0, -1), (-1, 0), (1, 0), "pickup", "putdown"]
 rewards = {}  # reward of states: 4 tuple (i1,j1,i2,j2)
 # transition probability of state, action, next state
 TransitionArray = defaultdict(int)
@@ -51,7 +55,7 @@ def valueIteration(problem, epsilon):  # TODO
                     currValue = 0
                     for state2 in states:
                         currValue += TransitionArray[state, action, state2] * (
-                            rewards[state2] + discount * values[state2])
+                            rewards[state] + discount * values[state2])
                     if currValue > newValue:
                         newValue = currValue
                         policy[state] = action
@@ -120,12 +124,88 @@ def initReward(passengerDestination):
     rewards[passengerDestination] = 1
 
 
-# def takeAction(taxiLocation, desiredAction):
-#     actionTaken =
-#     (newX, newY) = taxiLocation + action
-#     if(isSafe(taxiLocation[0], taxiLocation[1], newX, newY)):
-#         taxiLocation = (newX, newY)
-#     return taxiLocation
+def takeAction(passengerLoc, passengerDestination, taxiLoc):
+    # given policy and start end position, simulate the taxi
+    # return the end position
+    isInTaxi = False
+    global actions
+    while True:
+        render(passengerLoc, passengerDestination, taxiLoc)
+        print(passengerLoc, passengerDestination, taxiLoc)
+        currState = (taxiLoc[0], taxiLoc[1],
+                     passengerLoc[0], passengerLoc[1])
+        rand_choice = random.random()
+        if(rand_choice < 0.85):
+            action = policy[currState]
+        else:
+            temp = policy[currState]
+            actions.remove(temp)
+            action = random.choice(actions)
+            actions.append(temp)
+        if(taxiLoc == passengerDestination and isInTaxi):
+            return "Reached"
+        if type(action) == str:
+            if action == "pickup":
+                isInTaxi = True
+            if action == "putdown":
+                isInTaxi = False
+        else:
+            if(isSafe(taxiLoc[0], taxiLoc[1], taxiLoc[0]+action[0], taxiLoc[1]+action[1])):
+                taxiLoc += action
+                if isInTaxi:
+                    passengerLoc += action
+            else:
+                continue
+
+# simple renderer that renders x,y coordinates on grid display
+
+
+pygame.init()
+screen = pygame.display.set_mode((500, 500))
+pygame.display.set_caption("Taxi")
+background = pygame.Surface(screen.get_size())
+background = background.convert()
+background.fill((250, 250, 250))
+screen.blit(background, (0, 0))
+
+
+def render(passengerLoc, passengerDestination, taxiLoc):
+    # 5*5 grid game
+    # passengerLoc = (x,y)
+    # passengerDestination = (x,y)
+    # taxiLoc = (x,y)
+    # render the grid
+
+    # draw grid
+    for i in range(5):
+        for j in range(5):
+            pygame.draw.rect(screen, (0, 0, 0),
+                             [(i+1)*50, (j+1)*50, 50, 50])
+    # draw passenger
+    pygame.draw.rect(screen, (0, 0, 255),
+                     [(passengerLoc[0]+1)*50, (passengerLoc[1]+1)*50, 50, 50])
+    # draw destination
+    pygame.draw.rect(screen, (255, 0, 0),
+                     [(passengerDestination[0]+1)*50, (passengerDestination[1]+1)*50, 50, 50])
+    # draw taxi
+    pygame.draw.rect(screen, (0, 255, 0),
+                     [(taxiLoc[0]+1)*50, (taxiLoc[1]+1)*50, 50, 50])
+    pygame.display.flip()
+    pygame.time.wait(5)
+
+
+# def render(passengerLoc, passengerDestination, taxiLoc):
+#     for i in range(5):
+#         for j in range(5):
+#             if (i, j) == passengerLoc:
+#                 print("P", end=" ")
+#             elif (i, j) == passengerDestination:
+#                 print("D", end=" ")
+#             elif (i, j) == taxiLoc:
+#                 print("T", end=" ")
+#             else:
+#                 print("-", end=" ")
+#         print()
 
 
 def simulate():
@@ -145,6 +225,8 @@ def simulate():
 
     problem = (passengerStart, passengerDestination, taxiStart)
     valueIteration(problem, 0.001)
+    print(problem)
+    takeAction(passengerStart, passengerDestination, taxiStart)
 
 
 if __name__ == '__main__':
