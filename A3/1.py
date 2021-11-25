@@ -1,5 +1,6 @@
 import random
-
+import numpy as np
+from collections import defaultdict
 
 '''
 	Solving taxi problem with MDP
@@ -20,12 +21,45 @@ import random
 
 depots = [(0, 0), (0, 4), (3, 0), (4, 4)]
 actions = [(0, 1), (0, -1), (-1, 0), (1, 0)]  # north, south, east and west
-rewards = {}
-TransitionArray = {}
-values = [0 for i in range(625)]  # value iteration array
+rewards = {}  # reward of states: 4 tuple (i1,j1,i2,j2)
+# transition probability of state, action, next state
+TransitionArray = defaultdict(int)
+values = defaultdict(int)  # value of states
+policy = defaultdict(int)  # policy of states
+states = []
+isInTaxi = False
 
 
 def valueIteration(problem, epsilon):  # TODO
+    # implement value iteration
+    # problem = (passengerStart, passengerDestination, taxiStart)
+    discount = 0.9
+    # convergence criteria: max-norm distance between two consecutive value functions
+    while True:
+        delta = 0
+        for state in states:
+            oldValue = values[state]
+            newValue = 0
+            for action in actions:
+                if isSafe(state[0], state[1], state[0] + action[0], state[1] + action[1]):
+                    if isInTaxi:
+                        nextState = (state[0] + action[0], state[1] + action[1],
+                                     state[2] + action[0], state[3] + action[1])
+                    else:
+                        nextState = (
+                            state[0] + action[0], state[1] + action[1], state[0], state[1])
+                    currValue = 0
+                    for state2 in states:
+                        currValue += TransitionArray[state, action, state2] * (
+                            rewards[state2] + discount * values[state2])
+                    if currValue > newValue:
+                        newValue = currValue
+                        policy[state] = action
+            values[state] = newValue
+            delta = max(delta, abs(oldValue - newValue))
+        if delta < epsilon:
+            break
+    print(values)
 
 
 def policyIteration():  # TODO
@@ -65,22 +99,21 @@ def addToTransitionArray(state, desiredAction):
             TransitionArray[state, action, state] = 1
 
 
-# hashMapForStates = {}
-# x = 0
-
 # transition function
 def initTransitionFunction():
+    global states
+    x = 0
     for i1 in range(5):
         for j1 in range(5):
             for i2 in range(5):
                 for j2 in range(5):
                     state = (i1, j1, i2, j2)
-                    # hashMapForStates[state] = x
-                    # x = x + 1
-                    addToTransitionArray(state, (0, 1))
-                    addToTransitionArray(state, (0, -1))
-                    addToTransitionArray(state, (1, 0))
-                    addToTransitionArray(state, (-1, 0))
+                    states += [state]
+                    rewards[state] = 0
+                    policy[state] = random.choice(actions)
+                    values[state] = 0
+                    for action in actions:
+                        addToTransitionArray(state, action)
 
 
 def initReward(passengerDestination):
