@@ -2,7 +2,8 @@ import pygame
 import random
 import numpy as np
 from collections import defaultdict
-
+import time
+import pickle
 random.seed(0)
 '''
 	Solving taxi problem with MDP
@@ -51,8 +52,11 @@ class state:
         return hash(str(self))
 
 
-def reward_fuction(state1, action, state2):
-    if action == "putdwon" and state.passenger == state.destination:
+def reward_fuction(state, action):
+    # action taken strictly
+
+    if action == "putdwon" and state.taxi == state.destination == state.passenger and state.isInTaxi == True:
+        # if action == "putdwon" and state.taxi == state2.taxi and state.passenger == state2.passenger == state.destination and state2.isInTaxi == False and state.isInTaxi == True:
         return 20
     if (action == "pickup" or action == "putdown") and state.taxi != state.passenger:
         return -10
@@ -62,7 +66,6 @@ def reward_fuction(state1, action, state2):
 def valueIteration(epsilon):  # TODO
     # implement value iteration
     global values, old_values, TransitionArray, states, policy
-    # problem = (passengerStart, passengerDestination, taxiStart)
     discount = 0.9
     print("length of states", len(states))
     iter = 0
@@ -71,31 +74,74 @@ def valueIteration(epsilon):  # TODO
     # convergence criteria: max-norm distance between two consecutive value functions
     while True and iter < max_iter:
         delta = 0
-        for state in states:
-            print("starting", state)
-            newValue = 0
+        for state in states:  # 1250
+            newValue = -100000000
             for action in actions:
                 currValue = 0
                 for state2 in states:
                     if TransitionArray[state, action, state2] != 0:
                         currValue += TransitionArray[state, action, state2] * (
-                            reward_fuction(state, action, state2) + discount * old_values[state2])
-
+                            reward_fuction(state, action) + discount * old_values[state2])
                 if currValue > newValue:
                     newValue = currValue
                     policy[state] = action
             values[state] = newValue
             delta = max(delta, abs(values[state]-old_values[state]))
+        print("---------------")
         old_values = values.copy()
         iter += 1
-        print(iter)
+        print("iter", iter)
+        print("delta:", delta)
+        time.sleep(2)
         if delta < epsilon:
             break
-    # print(values)
 
 
-def policyIteration():  # TODO
-    pass
+def policyIteration(epsilon):  # TODO
+    # implement policy iteration
+    global values, old_values, TransitionArray, states, policy
+    discount = 0.9
+    iter = 0
+    max_iter = 5
+    old_policy = policy.copy()
+    # convergence criteria: max-norm distance between two consecutive value functions
+    while True and iter < max_iter:
+        delta = 0
+        # Policy Evaluation
+        old_values = values.copy()
+        old_policy = policy.copy()
+        for state in states:  # 1250
+            newValue = -100000000
+            action = old_policy[state]
+            currValue = 0
+            for state2 in states:
+                if TransitionArray[state, action, state2] != 0:
+                    currValue += TransitionArray[state, action, state2] * (
+                        reward_fuction(state, action) + discount * old_values[state2])
+            values[state] = currValue
+        old_values = values.copy()
+        # Policy Improvement
+        # delta = 0
+        for state in states:
+            newValue = -100000000
+            for action in actions:
+                currValue = 0
+                for state2 in states:
+                    if TransitionArray[state, action, state2] != 0:
+                        currValue += TransitionArray[state, action, state2] * (
+                            reward_fuction(state, action) + discount * old_values[state2])
+                if currValue > newValue:
+                    newValue = currValue
+                    policy[state] = action
+            delta = max(delta, abs(values[state]-old_values[state]))
+        print("---------------")
+
+        iter += 1
+        print("iter", iter)
+        print("delta:", delta)
+        time.sleep(2)
+        # if delta < epsilon:
+        #     break
 
 
 def isSafe(oldx, oldy, newx, newy):
@@ -118,11 +164,15 @@ def isSafe(oldx, oldy, newx, newy):
 
 
 def addToTransitionArray(state0, desiredAction):
-    if desiredAction == "pickup":
-        TransitionArray[state0, desiredAction, state0] = 1
+    if desiredAction == "pickup":  # TODO HERE
+        state1 = state(state0.taxi[0], state0.taxi[1], state0.passenger[0],
+                       state0.passenger[1], state0.destination[0], state0.destination[1], True)
+        TransitionArray[state0, desiredAction, state1] = 1
         return
     if desiredAction == "putdown":
-        TransitionArray[state0, desiredAction, state0] = 1
+        state1 = state(state0.taxi[0], state0.taxi[1], state0.passenger[0],
+                       state0.passenger[1], state0.destination[0], state0.destination[1], False)
+        TransitionArray[state0, desiredAction, state1] = 1
         return
 
     for action in actions:
@@ -240,7 +290,7 @@ def render(passengerLoc, passengerDestination, taxiLoc):
     pygame.time.wait(5)
 
 
-def eposide():
+def eposide(question):
 
     # randomly generate starting depot for passenger, select different destination depot for passenger and starting location for taxi
     passengerStart = depots[random.randint(0, 3)]
@@ -253,15 +303,30 @@ def eposide():
     # initialize reward function
     print("initializing reward function")
     initTransitionFunction(passengerDestination)
-    print("Starting value iteration")
-    valueIteration(0.001)
-
+    if question == "1":
+        print("Starting value iteration")
+        valueIteration(0.001)
+    else:
+        print("Starting policy iteration")
+        policyIteration(0.001)
     iniState = state(taxiStart[0], taxiStart[1], passengerStart[0],
                      passengerStart[1], passengerDestination[0], passengerDestination[1], False)
     print("Starting simulation as per policy")
-    takeAction(iniState)
+
+    # save the policy as pkl model
+    with open('policy'+str(question)+'.pkl', 'wb') as f:
+        pickle.dump(policy, f)
+
+    # taxi, passenger, destination
+    # print(policy[iniState])
+
+    # takeAction(iniState)
 
 
 if __name__ == '__main__':
-    eposide()
+    eposide("2")
     # print(TransitionArray)
+    # read the policy from pkl model
+    with open('policy.pkl', 'rb') as f:
+        policy = pickle.load(f)
+    takeAction(state(0, 2, 4, 4, 0, 4, False))
