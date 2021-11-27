@@ -73,9 +73,12 @@ def valueIteration(epsilon):  # TODO
     iter = 0
     max_iter = 20
     old_values = values.copy()
+    valuesLossArr = []
     # convergence criteria: max-norm distance between two consecutive value functions
     while True and iter < max_iter:
         delta = 0
+        valueLoss = 0
+
         for state in states:  # 1250
             newValue = -100000000
             for action in actions:
@@ -88,15 +91,23 @@ def valueIteration(epsilon):  # TODO
                     newValue = currValue
                     policy[state] = action
             values[state] = newValue
+            valueLoss += pow(values[state]-old_values[state], 2)
             delta = max(delta, abs(values[state]-old_values[state]))
         print("---------------")
         old_values = values.copy()
         iter += 1
         print("iter", iter)
         print("delta:", delta)
-        time.sleep(2)
+        print("valueLoss:", valueLoss)
+        valuesLossArr.append(pow(valueLoss, 0.5))
+        # time.sleep(2)
         if delta < epsilon:
             break
+    # save valueloss array to csv
+    with open('valueLoss.csv', 'w') as f:
+        for item in valuesLossArr:
+            f.write("%s\n" % item)
+    print("value loss:", valuesLossArr)
 
 
 def policyIteration(epsilon):  # TODO
@@ -106,9 +117,11 @@ def policyIteration(epsilon):  # TODO
     iter = 0
     max_iter = 20
     old_policy = policy.copy()
+    policyLossArr = []
     # convergence criteria: max-norm distance between two consecutive value functions
     while True and iter < max_iter:
         delta = 0
+        policyLoss = 0
         # Policy Evaluation
         old_values = values.copy()
         old_policy = policy.copy()
@@ -121,6 +134,7 @@ def policyIteration(epsilon):  # TODO
                     currValue += TransitionArray[state, action, state2] * (
                         reward_fuction(state, action) + discount * old_values[state2])
             values[state] = currValue
+
         # old_values = values.copy()
         # Policy Improvement
         # delta = 0
@@ -138,15 +152,23 @@ def policyIteration(epsilon):  # TODO
                     if policy[state] != action:
                         policy[state] = action
                         isConverged = False
+            policyLoss += pow(values[state]-old_values[state], 2)
             delta = max(delta, abs(values[state]-old_values[state]))
         print("---------------")
 
         iter += 1
         print("iter", iter)
         print("delta:", delta)
-        time.sleep(2)
+        print("policyLoss:", policyLoss)
+        policyLossArr.append(pow(policyLoss, 0.5))
+
         if delta < epsilon or isConverged:
             return
+    # save policy loss array to csv
+    with open('policyLoss.csv', 'w') as f:
+        for item in policyLossArr:
+            f.write("%s\n" % item)
+    print("policy loss:", policyLossArr)
 
 
 def isSafe(oldx, oldy, newx, newy):
@@ -313,10 +335,10 @@ def eposide(question):
     initTransitionFunction(passengerDestination)
     if question == "1":
         print("Starting value iteration")
-        valueIteration(0.001)
+        valueIteration(0.1)
     else:
         print("Starting policy iteration")
-        policyIteration(0.001)
+        policyIteration(0.1)
     iniState = state(taxiStart[0], taxiStart[1], passengerStart[0],
                      passengerStart[1], passengerDestination[0], passengerDestination[1], False)
     print("Starting simulation as per policy")
@@ -329,7 +351,38 @@ def eposide(question):
     # print(policy[iniState])
 
     # takeAction(iniState)
+import csv
+import matplotlib.pyplot as plt
 
+def plotGraphs():
+    # read csv file and plot graphs
+    policyArray = []
+    valueArray = []
+    with open('policyLoss.csv', 'r') as csvfile:
+        plots = csv.reader(csvfile, delimiter=',')
+        for row in plots:
+            policyArray.append(row)
+    with open('valueLoss.csv', 'r') as csvfile:
+        plots = csv.reader(csvfile, delimiter=',')
+        for row in plots:
+            valueArray.append(row)
+    
+    # plot
+    x = np.arange(0, len(policyArray))
+    plt.plot(x, policyArray, label='Policy')
+    plt.xlabel('Iterations')
+    plt.ylabel('Policy')
+    plt.title('Policy Iteration')
+    plt.legend()
+    plt.savefig('policy1.png')
+
+    x = np.arange(0, len(valueArray))
+    plt.plot(x, valueArray, label='Value')
+    plt.xlabel('Iterations')
+    plt.ylabel('Value')
+    plt.title('Value Iteration')
+    plt.legend()
+    plt.savefig('value1.png')
 
 if __name__ == '__main__':
     question = sys.argv[1]
