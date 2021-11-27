@@ -68,10 +68,10 @@ def reward_fuction(state, action):
 def valueIteration(epsilon):  # TODO
     # implement value iteration
     global values, old_values, TransitionArray, states, policy
-    discount = 0.9
+    discount = 0.8
     print("length of states", len(states))
     iter = 0
-    max_iter = 10
+    max_iter = 20
     old_values = values.copy()
     # convergence criteria: max-norm distance between two consecutive value functions
     while True and iter < max_iter:
@@ -102,9 +102,9 @@ def valueIteration(epsilon):  # TODO
 def policyIteration(epsilon):  # TODO
     # implement policy iteration
     global values, old_values, TransitionArray, states, policy
-    discount = 0.9
+    discount = 0.8
     iter = 0
-    max_iter = 10
+    max_iter = 20
     old_policy = policy.copy()
     # convergence criteria: max-norm distance between two consecutive value functions
     while True and iter < max_iter:
@@ -124,6 +124,7 @@ def policyIteration(epsilon):  # TODO
         # old_values = values.copy()
         # Policy Improvement
         # delta = 0
+        isConverged = True
         for state in states:
             newValue = -100000000
             for action in actions:
@@ -134,7 +135,9 @@ def policyIteration(epsilon):  # TODO
                             reward_fuction(state, action) + discount * values[state2])
                 if currValue > newValue:
                     newValue = currValue
-                    policy[state] = action
+                    if policy[state] != action:
+                        policy[state] = action
+                        isConverged = False
             delta = max(delta, abs(values[state]-old_values[state]))
         print("---------------")
 
@@ -142,8 +145,8 @@ def policyIteration(epsilon):  # TODO
         print("iter", iter)
         print("delta:", delta)
         time.sleep(2)
-        if delta < epsilon:
-            break
+        if delta < epsilon or isConverged:
+            return
 
 
 def isSafe(oldx, oldy, newx, newy):
@@ -330,7 +333,7 @@ def eposide(question):
 
 if __name__ == '__main__':
     question = sys.argv[1]
-    # eposide(question)
+    eposide(question)
     # print(TransitionArray)
     # read the policy from pkl model
     with open('policy'+question+'.pkl', 'rb') as f:
