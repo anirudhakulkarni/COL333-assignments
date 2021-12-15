@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import csv
 import sys
 import pygame
 import random
@@ -6,6 +8,7 @@ from collections import defaultdict
 import time
 import pickle
 random.seed(0)
+DISCOUNT = 0.01
 '''
 	Solving taxi problem with MDP
 '''
@@ -68,7 +71,7 @@ def reward_fuction(state, action):
 def valueIteration(epsilon):  # TODO
     # implement value iteration
     global values, old_values, TransitionArray, states, policy
-    discount = 0.8
+    discount = DISCOUNT
     print("length of states", len(states))
     iter = 0
     max_iter = 20
@@ -104,7 +107,7 @@ def valueIteration(epsilon):  # TODO
         if delta < epsilon:
             break
     # save valueloss array to csv
-    with open('valueLoss.csv', 'w') as f:
+    with open('valueLoss'+str(DISCOUNT)+'.csv', 'w') as f:
         for item in valuesLossArr:
             f.write("%s\n" % item)
     print("value loss:", valuesLossArr)
@@ -113,7 +116,7 @@ def valueIteration(epsilon):  # TODO
 def policyIteration(epsilon):  # TODO
     # implement policy iteration
     global values, old_values, TransitionArray, states, policy
-    discount = 0.8
+    discount = DISCOUNT
     iter = 0
     max_iter = 20
     old_policy = policy.copy()
@@ -163,9 +166,9 @@ def policyIteration(epsilon):  # TODO
         policyLossArr.append(pow(policyLoss, 0.5))
 
         if delta < epsilon or isConverged:
-            return
+            break
     # save policy loss array to csv
-    with open('policyLoss.csv', 'w') as f:
+    with open('policyLoss'+str(DISCOUNT)+'.csv', 'w') as f:
         for item in policyLossArr:
             f.write("%s\n" % item)
     print("policy loss:", policyLossArr)
@@ -335,10 +338,10 @@ def eposide(question):
     initTransitionFunction(passengerDestination)
     if question == "1":
         print("Starting value iteration")
-        valueIteration(0.1)
+        valueIteration(0.00001)
     else:
         print("Starting policy iteration")
-        policyIteration(0.1)
+        policyIteration(0.00001)
     iniState = state(taxiStart[0], taxiStart[1], passengerStart[0],
                      passengerStart[1], passengerDestination[0], passengerDestination[1], False)
     print("Starting simulation as per policy")
@@ -351,41 +354,34 @@ def eposide(question):
     # print(policy[iniState])
 
     # takeAction(iniState)
-import csv
-import matplotlib.pyplot as plt
+
 
 def plotGraphs():
     # read csv file and plot graphs
+
     policyArray = []
     valueArray = []
     with open('policyLoss.csv', 'r') as csvfile:
         plots = csv.reader(csvfile, delimiter=',')
         for row in plots:
-            policyArray.append(row)
+            policyArray.append(row[0])
     with open('valueLoss.csv', 'r') as csvfile:
         plots = csv.reader(csvfile, delimiter=',')
         for row in plots:
-            valueArray.append(row)
-    
-    # plot
-    x = np.arange(0, len(policyArray))
-    plt.plot(x, policyArray, label='Policy')
-    plt.xlabel('Iterations')
-    plt.ylabel('Policy')
-    plt.title('Policy Iteration')
-    plt.legend()
-    plt.savefig('policy1.png')
+            valueArray.append(row[0])
 
-    x = np.arange(0, len(valueArray))
-    plt.plot(x, valueArray, label='Value')
-    plt.xlabel('Iterations')
-    plt.ylabel('Value')
-    plt.title('Value Iteration')
-    plt.legend()
-    plt.savefig('value1.png')
+    # plot
+    print(policyArray)
+    iterationarray = [i+1 for i in range(len(policyArray))]
+    # x = np.arange(0, len(policyArray))
+    # plot policy loss
+    plt.plot(iterationarray, policyArray)
+    plt.show()
+
 
 if __name__ == '__main__':
     question = sys.argv[1]
+    # plotGraphs()
     eposide(question)
     # print(TransitionArray)
     # read the policy from pkl model
